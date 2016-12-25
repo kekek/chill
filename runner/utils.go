@@ -1,17 +1,16 @@
 package runner
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
 	"time"
 
-	colorlog "chill/log"
+	log "chill/util"
 
 	"github.com/fsnotify/fsnotify"
 )
-
-var log = colorlog.NewLog()
 
 func watch(path string, abort chan struct{}) (<-chan string, error) {
 	watcher, err := fsnotify.NewWatcher()
@@ -21,7 +20,7 @@ func watch(path string, abort chan struct{}) (<-chan string, error) {
 
 	for p := range list(path) {
 		if err := watcher.Add(p); err != nil {
-			log.Fatalf("Failed to watch: %s, error: %s", p, err.Error())
+			log.Error("Failed to watch: %s, error: %s", p, err.Error())
 		}
 	}
 
@@ -36,7 +35,7 @@ func watch(path string, abort chan struct{}) (<-chan string, error) {
 				// Abort watching
 				err := watcher.Close()
 				if err != nil {
-					log.Fatal("Failed to stop watch")
+					log.Error("Failed to stop watch")
 				}
 				return
 			case fp := <-watcher.Events:
@@ -44,12 +43,13 @@ func watch(path string, abort chan struct{}) (<-chan string, error) {
 					info, err := os.Stat(fp.Name)
 					if err != nil && info.IsDir() {
 						// Add newly created sub directories to watch list
+						log.Trace("Add newly diectory ( %s )", info.Name())
 						watcher.Add(fp.Name)
 					}
 				}
 				out <- fp.Name
 			case err := <-watcher.Errors:
-				log.Fatalf("watch error: %s", err.Error())
+				log.Error("watch error: %s", err.Error())
 			}
 		}
 	}()
@@ -63,7 +63,7 @@ func list(root string) <-chan string {
 	info, err := os.Stat(root)
 
 	if err != nil {
-		log.Fatalf("Failed to visit %s, error: %s", root, err.Error())
+		log.Error("Failed to visit %s, error: %s", root, err.Error())
 	}
 
 	if !info.IsDir() {
@@ -79,7 +79,7 @@ func list(root string) <-chan string {
 		filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 			if info.IsDir() {
 				if err != nil {
-					log.Fatalf("Failed to visit directory: %s, error: %s", path, err.Error())
+					log.Error("Failed to visit directory: %s, error: %s", path, err.Error())
 					return err
 				}
 				out <- path
@@ -99,6 +99,7 @@ func match(in <-chan string, patterns []string) <-chan string {
 		for fp := range in {
 			info, err := os.Stat(fp)
 
+			// here have bug
 			if os.IsExist(err) || !info.IsDir() {
 				//Split splits path immediately following the final Separator,
 				//separating it into a directory and file name component.
@@ -137,4 +138,29 @@ loop:
 
 	sort.Strings(ret)
 	return ret
+}
+
+func readAppDirectories(directory string, paths *[]string) {
+	fileInfos, err := ioutil.ReadDir(directory)
+
+	if err != nil {
+		return
+	}
+
+	haveDir := false
+	for _, fileinfo := range fileInfos {
+		if fileinfo.IsDir() == true && fileinfo.Name() != "." && fileinfo.Name() != ".git" {
+			readAppDirectories(directory+"/"+fileinfo.Name(), paths)
+			continue
+		}
+
+		if haveDir {
+			continue
+		}
+
+		if filepath.Ext(fileinfo.Name()) == ".go" {
+			*paths = append(*paths, directory)
+			haveDir = true
+		}
+	}
 }

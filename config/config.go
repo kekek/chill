@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	colorlog "chill/log"
+	log "chill/util"
 )
 
 type Configs struct {
@@ -16,8 +16,6 @@ type Configs struct {
 	Patterns  []string
 	Command   []string
 }
-
-var log = colorlog.NewLog()
 
 var configfile = flag.String("config", ".chill.json", "Config file")
 var directory = flag.String("dir", "", "Directory to watch")
@@ -61,12 +59,12 @@ func readConfigFile() Configs {
 	defer file.Close()
 	var conf Configs
 	if err != nil {
-		log.Fatalf("Faild to open config file: %s", err.Error())
+		log.Error("Faild to open config file: %s", err.Error())
 	} else {
-		log.Infof("Reading options from %s", *configfile)
+		log.Info("Reading options from %s", *configfile)
 		// NewDecoder return a new decoder that reads from r(file).
 		if err := json.NewDecoder(file).Decode(&conf); err != nil {
-			log.Fatalf("Failed to parse config file: %s", err.Error())
+			log.Error("Failed to parse config file: %s", err.Error())
 		} else {
 			return conf
 		}
@@ -79,7 +77,7 @@ func parseDirectory() string {
 	dir := *directory
 	if info, err := os.Stat(dir); err == nil {
 		if !info.IsDir() {
-			log.Fatalf("%s is not a directory", dir)
+			log.Error("%s is not a directory", dir)
 		}
 	}
 	return dir
@@ -114,20 +112,20 @@ func parseCommand() []string {
 }
 
 func saveConfigFile(conf Configs) {
-	log.Infof("Saving options to %s", *configfile)
+	log.Info("Saving options to %s", *configfile)
 	file, err := os.Create(*configfile)
 	defer file.Close()
 
 	if err != nil {
-		log.Fatalf("Failed to open config file:", err)
+		log.Error("Failed to open config file:", err)
 	}
 	// MarshalIndent is like Marshal but applies Indent to foramt the outpu
 	// blew is indent four space
 	if bytes, err := json.MarshalIndent(conf, "", "    "); err == nil {
 		if _, err := file.Write(bytes); err != nil {
-			log.Fatalf("Failed to write config file: %s", err.Error())
+			log.Error("Failed to write config file: %s", err.Error())
 		}
 	} else {
-		log.Fatalf("Failed to encode options: %s", err.Error())
+		log.Error("Failed to encode options: %s", err.Error())
 	}
 }

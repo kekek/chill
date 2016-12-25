@@ -7,12 +7,11 @@ import (
 
 	"chill/command"
 	"chill/config"
-	colorlog "chill/log"
 	"chill/runner"
+	log "chill/util"
 )
 
 func main() {
-	var log = colorlog.NewLog()
 	conf := config.GetConfigs()
 
 	abspath, _ := filepath.Abs(conf.Directory)
@@ -28,7 +27,7 @@ func main() {
 
 		/// Block until a signal is received.
 		s := <-ch
-		log.Infof("Got signal :%s", s.String())
+		log.Info("Got signal :%s", s.String())
 		r.Exit()
 	}()
 	r.Start()

@@ -10,10 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	colorlog "chill/log"
+	log "chill/util"
 )
-
-var log = colorlog.NewLog()
 
 // Command is interface contains the String, Strar, Terminate method
 // An interface{} type is a type that could be any value
@@ -68,7 +66,7 @@ func (c *command) Start(delay time.Duration) {
 	// ProcessState contains information about an exited process,
 	// avaliable after a call to Wait or Run
 	if c.cmd != nil && c.cmd.ProcessState.Exited() {
-		log.Fatal("Failed to start command: previous command hasn't exit.")
+		log.Error("Failed to start command: previous command hasn't exit.")
 	}
 
 	// here may execute "chill go run main.go" or some other
@@ -89,7 +87,7 @@ func (c *command) Start(delay time.Duration) {
 	exit := make(chan struct{})
 
 	if err != nil {
-		log.Fatalf("Failed: %s", err.Error())
+		log.Error("Failed: %s", err.Error())
 	} else {
 		c.cmd = cmd
 		c.exit = exit
