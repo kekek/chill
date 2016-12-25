@@ -14,7 +14,7 @@ func (e empty) String() string {
 	return string(e)
 }
 
-func (e empty) Start(delay time.Duration) {
+func (e empty) Start(delay time.Duration, haveBuild bool) {
 	// Start an empty command just do nothing but delay for given duration
 	<-time.After(delay)
 }
