@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"os"
 	"strings"
 	"time"
 
@@ -42,9 +41,6 @@ func (r *runner) Command() command.Command {
 
 func (r *runner) Start() {
 	r.abort = make(chan struct{})
-	var paths []string
-
-	currpath, _ := os.Getwd()
 
 	changed, err := watch(r.path, r.abort)
 
@@ -52,16 +48,10 @@ func (r *runner) Start() {
 		log.Error("Failed to initialize watcher: %s", err.Error())
 	}
 
-	readAppDirectories(currpath, &paths)
-
 	matched := match(changed, r.patterns)
-	log.Info("Start watching......")
 
-	for _, dir := range paths {
-		log.Trace("Directory( %s )", dir)
-	}
-
-	r.command.Start(time.Millisecond * 200)
+	haveBuild := false
+	r.command.Start(time.Millisecond*200, haveBuild)
 	for fp := range matched {
 		files := gather(fp, matched, time.Millisecond*500)
 
@@ -71,7 +61,8 @@ func (r *runner) Start() {
 		log.Info("File changed: %s", strings.Join(files, ", "))
 
 		// Run new command
-		r.command.Start(time.Millisecond * 200)
+		haveBuild = true
+		r.command.Start(time.Millisecond*200, haveBuild)
 	}
 }
 
