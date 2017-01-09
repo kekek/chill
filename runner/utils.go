@@ -46,6 +46,10 @@ func watch(path string, abort chan struct{}) (<-chan string, error) {
 					out <- fp.Name
 				}
 
+				if fp.Op == fsnotify.Remove {
+					out <- fp.Name
+				}
+
 			case err := <-watcher.Errors:
 				log.Error("watch error: %s", err.Error())
 			}
@@ -148,14 +152,3 @@ func readAppDirectories(directory string, paths *[]string) {
 		}
 	}
 }
-
-// var watchExts = []string{""}
-
-// func checkIfWatchModify(name string) bool {
-// 	for _, s := range watchExts {
-// 		if strings.HasSuffix(name, s) {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
